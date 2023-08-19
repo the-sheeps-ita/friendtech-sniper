@@ -1,4 +1,4 @@
-# Friendtech-sniper
+# Friendtech sniper
 
 1) Install python 3.9.2 to run
 
