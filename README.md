@@ -12,7 +12,7 @@
     The content of the private.py file should be: (keep the ")
     private_key = "YOUR PRIVATE KEY HERE"
     telegram_bot_token = "YOUR TELEGRAM BOT TOKEN HERE"
-    telegram_chat_id = "YOUR TELEGRAM CHAT ID HERE
+    telegram_chat_id = "YOUR TELEGRAM CHAT ID HERE"
 
-5) Customize the variable "amount_to_buy" and "price_limit" as you like
+6) Customize the variable "amount_to_buy" and "price_limit" as you like
  
