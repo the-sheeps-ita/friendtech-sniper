@@ -62,7 +62,7 @@ def buy(address, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4"
         if shares > 0:
             print("User already initialized the account")
 
-            price = contract.functions.getBuyPriceAfterFee(address, 1).call()
+            price = float(contract.functions.getBuyPriceAfterFee(address, 1).call()) / pow(10, 18)
 
             #checks if the user has enough funds to buy the share
             if w3.eth.get_balance(w3.eth.default_account) < price:
@@ -76,7 +76,7 @@ def buy(address, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4"
                 'gas': 100000,
                 'gasPrice': w3.toWei('5', 'gwei'),
                 'nonce': nonce,
-                'value': price / pow(10, 18)
+                'value': price * pow(10, 18)
             })
 
             signed_tx = w3.eth.account.sign_transaction(tx, private_key)
