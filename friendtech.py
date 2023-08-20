@@ -55,6 +55,7 @@ async def send_telegram_message(message, bot_token = telegram_bot_token, chat_id
 #Uses the web3 library to buy a share of the NFT
 def buy(address, user_pair, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4", contract_abi = abi, private_key = private_key):
     try:
+        print(f"User {user_pair[0]} address is: {address}")
         w3.eth.default_account = w3.eth.account.privateKeyToAccount(private_key).address
         address = w3.toChecksumAddress(address)
         contract = w3.eth.contract(address=contract_address, abi=contract_abi)
@@ -97,7 +98,7 @@ def buy(address, user_pair, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C
 
             return True
         else:
-            print("User didn't initialize the account")
+            print(f"User {user_pair[0]} didn't initialize the account")
             return False
 
     except Exception as e:
