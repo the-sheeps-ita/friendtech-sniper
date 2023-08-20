@@ -9,8 +9,9 @@ from web3 import Web3
 import asyncio
 from private import private_key, telegram_bot_token, telegram_chat_id
 
-amount_to_buy = 4
+amount_to_buy = 20
 delay = 1
+price_limit = 0.3
 
 
 api_url = "https://prod-api.kosetto.com/search/users?username="
@@ -29,8 +30,9 @@ def check_for_user(user_pair):
                 
                 if i["twitterUsername"] == user:        #Selecting the user with the exact twitter handle
                     print("Found "+user+"!")
+                    #asyncio.run(send_telegram_message(message="Found "+user+"!"))
                     for x in range(1,amount_to_buy):
-                        result = buy(i["address"])          #Buying the share
+                        result = buy(i["address"], user_pair)          #Buying the share
                         if result == True:
                             users_list[users_list.index(user_pair)] = (user_pair[0],1)   #Marking the user as bought
                         else:
@@ -51,11 +53,10 @@ async def send_telegram_message(message, bot_token = telegram_bot_token, chat_id
         print("Error sending message:", str(e))
 
 #Uses the web3 library to buy a share of the NFT
-def buy(address, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4", contract_abi = abi, private_key = private_key):
+def buy(address, user_pair, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4", contract_abi = abi, private_key = private_key):
     try:
-        w3.eth.default_account = w3.eth.account.privateKeyToAccount(private_key).address #w3.to_checksum_address(w3.eth.account.from_key(private_key).address)
+        w3.eth.default_account = w3.eth.account.privateKeyToAccount(private_key).address
         address = w3.toChecksumAddress(address)
-        #contract_address = w3.to_checksum_address(contract_address)
         contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 
         shares = contract.functions.sharesSupply(address).call()
@@ -68,8 +69,16 @@ def buy(address, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4"
             if w3.eth.get_balance(w3.eth.default_account) < price:
                 print("You don't have enough funds to buy the share")
                 asyncio.run(send_telegram_message(message="You don't have enough funds to buy the share"))
+                users_list[users_list.index(user_pair)] = (user_pair[0],1)
                 return False
             
+            #checks if the price is below the limit
+            if price > price_limit:
+                print("The price is above the limit")
+                asyncio.run(send_telegram_message(message="The price is over the limit"))
+                users_list[users_list.index(user_pair)] = (user_pair[0],1)
+                return False
+
             nonce = w3.eth.get_transaction_count(w3.eth.default_account)
             tx = contract.functions.buyShares(address, 1).buildTransaction({
                 'chainId': 8453,
@@ -82,6 +91,7 @@ def buy(address, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4"
             signed_tx = w3.eth.account.sign_transaction(tx, private_key)
             tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
+            asyncio.run(send_telegram_message(message="Found "+user_pair[0]+"!"))
             print("Transaction sent:", tx_hash.hex())
             asyncio.run(send_telegram_message(message="Transaction sent: https://basescan.org/tx/" + tx_hash.hex()))
 
@@ -110,11 +120,15 @@ def read_users():
 if __name__ == "__main__":
     users_list = read_users()
 
-    while True:
-        threads = []
-        for user in users_list:
-            if user[1] == 0:
-                x = threading.Thread(target=check_for_user, args=(user,))
-                threads.append(x)
-                x.start()
-        time.sleep(delay)
+    try:
+        while True:
+            threads = []
+            for user in users_list:
+                if user[1] == 0:
+                    x = threading.Thread(target=check_for_user, args=(user,))
+                    threads.append(x)
+                    x.start()
+            time.sleep(delay)
+    except KeyboardInterrupt:
+        print("Exiting...")
+        exit()
