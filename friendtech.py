@@ -56,8 +56,8 @@ async def send_telegram_message(message, bot_token = telegram_bot_token, chat_id
 def buy(address, user_pair, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4", contract_abi = abi, private_key = private_key):
     try:
         print(f"User {user_pair[0]} address is: {address}")
-        w3.eth.default_account = w3.eth.account.privateKeyToAccount(private_key).address
-        address = w3.toChecksumAddress(address)
+        w3.eth.default_account = w3.eth.account.from_key(private_key).address
+        address = w3.to_checksum_address(address)
         contract = w3.eth.contract(address=contract_address, abi=contract_abi)
 
         shares = contract.functions.sharesSupply(address).call()
@@ -79,15 +79,19 @@ def buy(address, user_pair, contract_address = "0xCF205808Ed36593aa40a44F10c7f7C
                 asyncio.run(send_telegram_message(message="The price is over the limit"))
                 users_list[users_list.index(user_pair)] = (user_pair[0],1)
                 return False
-
+                
+            input = contract.encodeABI(fn_name="buyShares", args=[address, 1])
             nonce = w3.eth.get_transaction_count(w3.eth.default_account)
-            tx = contract.functions.buyShares(address, 1).buildTransaction({
+            tx = {
                 'chainId': 8453,
                 'gas': 100000,
-                'gasPrice': w3.toWei('5', 'gwei'),
+                'from': w3.eth.default_account,
+                'to': "0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4",
+                'gasPrice': w3.to_wei('5', 'gwei'),
                 'nonce': nonce,
-                'value': price * pow(10, 18)
-            })
+                'value': w3.to_wei(price, "ether"),
+                'data': input
+            }
 
             signed_tx = w3.eth.account.sign_transaction(tx, private_key)
             tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
